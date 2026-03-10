@@ -34,9 +34,8 @@ namespace Raytracer
             BoundingBox = new AABB(box1, box2);
         }
 
-        public override bool Hit(Ray r, Interval rayT, out HitRecord rec)
+        public override bool Hit(Ray r, Interval rayT, ref HitRecord rec)
         {
-            rec = null;
             Vec3 currentCenter = Center.At(r.Time);
             Vec3 oc = currentCenter - r.Origin;
             double a = r.Direction.LengthSquared();
@@ -61,7 +60,11 @@ namespace Raytracer
                 }
             }
 
-            rec = new HitRecord(r.At(root), root, r, (r.At(root) - currentCenter) / Radius, Material);
+            rec.T = root;
+            rec.Point = r.At(rec.T);
+            Vec3 outwardNormal = (rec.Point - currentCenter) / Radius;
+            rec.SetFaceNormal(r, outwardNormal);
+            rec.Material = Material;
             getSphereUV((rec.Point - currentCenter) / Radius, out double recU, out double recV);
             rec.U = recU;
             rec.V = recV;

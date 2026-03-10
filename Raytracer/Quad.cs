@@ -37,9 +37,8 @@ namespace Raytracer
             BoundingBox = new AABB(bBox1, bBox2);
         }
 
-        public override bool Hit(Ray r, Interval rayT, out HitRecord rec)
+        public override bool Hit(Ray r, Interval rayT, ref HitRecord rec)
         {
-            rec = null;
             double denom = Vec3.Dot(Normal, r.Direction);
 
             // No hit if ray is parallel to the plane of the quad
@@ -57,27 +56,27 @@ namespace Raytracer
             double alpha = Vec3.Dot(W, Vec3.Cross(planarHitVector, V));
             double beta = Vec3.Dot(W, Vec3.Cross(U, planarHitVector));
 
-            if (!IsInterior(alpha, beta, out double recU, out double recV))
+            if (!IsInterior(alpha, beta, ref rec))
                 return false;
 
             // Ray hits the 2D shape; set the rest of the hit record and return true.
-            rec = new HitRecord(intersection, t, r, Normal, Material);
-            rec.U = recU;
-            rec.V = recV;
+            rec.T = t;
+            rec.Point = intersection;
+            rec.Material = Material;
+            rec.SetFaceNormal(r, Normal);
             return true;
         }
 
-        public virtual bool IsInterior(double alpha, double beta, out double recU, out double recV)
+        public virtual bool IsInterior(double alpha, double beta, ref HitRecord rec)
         {
-            recU = recV = 0;
             Interval unitInterval = new Interval(0, 1);
             if (!unitInterval.Contains(alpha) || !unitInterval.Contains(beta))
             {
                 return false;
             }
 
-            recU = alpha;
-            recV = beta;
+            rec.U = alpha;
+            rec.V = beta;
             return true;
         }
 

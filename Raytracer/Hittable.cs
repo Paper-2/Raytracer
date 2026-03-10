@@ -8,7 +8,7 @@ namespace Raytracer
 {
     public abstract class Hittable
     {
-        public abstract bool Hit(Ray r, Interval rayT, out HitRecord rec);
+        public abstract bool Hit(Ray r, Interval rayT, ref HitRecord rec);
 
         public virtual AABB BoundingBox { get; set; }
     }
@@ -40,6 +40,7 @@ namespace Raytracer
             SetFaceNormal(r, outwardNormal);
             Material = material;
         }
+        public HitRecord() { }
     }
 
     public class Translate : Hittable
@@ -50,12 +51,12 @@ namespace Raytracer
         {
             Object = obj;
             Offset = offset;
-            BoundingBox = BoundingBox + Offset;
+            BoundingBox = Object.BoundingBox + Offset;
         }
-        public override bool Hit(Ray r, Interval rayT, out HitRecord rec)
+        public override bool Hit(Ray r, Interval rayT, ref HitRecord rec)
         {
             Ray movedRay = new Ray(r.Origin - Offset, r.Direction, r.Time);
-            if (!Object.Hit(movedRay, rayT, out rec))
+            if (!Object.Hit(movedRay, rayT, ref rec))
                 return false;
             rec.Point += Offset;
             return true;
@@ -97,9 +98,8 @@ namespace Raytracer
                     }
             return new AABB(min, max);
         }
-        public override bool Hit(Ray r, Interval rayT, out HitRecord rec)
+        public override bool Hit(Ray r, Interval rayT, ref HitRecord rec)
         {
-            rec = null;
             Vec3 origin = new Vec3(CosTheta * r.Origin.X - SinTheta * r.Origin.Z,
                                    r.Origin.Y,
                                    SinTheta * r.Origin.X + CosTheta * r.Origin.Z);
@@ -108,16 +108,15 @@ namespace Raytracer
                                       SinTheta * r.Direction.X + CosTheta * r.Direction.Z);
             Ray rotatedRay = new Ray(origin, direction, r.Time);
 
-            if (!Object.Hit(rotatedRay, rayT, out rec))
+            if (!Object.Hit(rotatedRay, rayT, ref rec))
                 return false;
 
-            Vec3 recP = new Vec3(CosTheta * rec.Point.X + SinTheta * rec.Point.Z,
+            rec.Point = new Vec3(CosTheta * rec.Point.X + SinTheta * rec.Point.Z,
                                  rec.Point.Y,
                                  -SinTheta * rec.Point.X + CosTheta * rec.Point.Z);
-            Vec3 recNormal = new Vec3(CosTheta * rec.Normal.X + SinTheta * rec.Normal.Z,
+            rec.Normal = new Vec3(CosTheta * rec.Normal.X + SinTheta * rec.Normal.Z,
                                         rec.Normal.Y,
                                         -SinTheta * rec.Normal.X + CosTheta * rec.Normal.Z);
-            rec = new HitRecord(recP, rec.T, rotatedRay, recNormal, rec.Material); // TODO: HOEH?
             return true;
         }
     }

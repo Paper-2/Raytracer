@@ -164,12 +164,12 @@ namespace Raytracer
             world.Add(new Quad(new Vec3(555, 555, 555), new Vec3(-555, 0, 0), new Vec3(0, 0, -555), white));
             world.Add(new Quad(new Vec3(0, 0, 555), new Vec3(555, 0, 0), new Vec3(0, 555, 0), white));
 
-            Hittable box1 = Quad.Box(new Vec3(0, 0, 0), new Vec3(165, 330, 165), red);
+            Hittable box1 = Quad.Box(new Vec3(0, 0, 0), new Vec3(165, 330, 165), white);
             box1 = new RotateY(box1, 15);
             box1 = new Translate(box1, new Vec3(265, 0, 295));
             world.Add(box1);
 
-            Hittable box2 = Quad.Box(new Vec3(0, 0, 0), new Vec3(165, 165, 165), green);
+            Hittable box2 = Quad.Box(new Vec3(0, 0, 0), new Vec3(165, 165, 165), white);
             box2 = new RotateY(box2, -18);
             box2 = new Translate(box2, new Vec3(130, 0, 65));
             world.Add(box2);
@@ -177,9 +177,9 @@ namespace Raytracer
 
             cam = new Camera(
                 aspectRatio: 1.0,
-                imageWidth: 600,
-                samplesPerPixel: 200,
-                maxDepth: 50,
+                imageWidth: 300,
+                samplesPerPixel: 50,
+                maxDepth: 10,
                 background: new Vec3(0, 0, 0),
                 vFov: 40,
                 lookFrom: new Vec3(278, 278, -800),
@@ -188,11 +188,202 @@ namespace Raytracer
                 defocusAngle: 0);
         }
 
+        static void CornellSmoke(HittableList world, out Camera cam)
+        {
+            Material red = new Lambertian(new Vec3(0.65, 0.05, 0.05));
+            Material white = new Lambertian(new Vec3(0.73, 0.73, 0.73));
+            Material green = new Lambertian(new Vec3(0.12, 0.45, 0.15));
+            Material light = new DiffuseLight(new Vec3(7, 7, 7));
+            world.Add(new Quad(new Vec3(555, 0, 0), new Vec3(0, 555, 0), new Vec3(0, 0, 555), green));
+            world.Add(new Quad(new Vec3(0, 0, 0), new Vec3(0, 555, 0), new Vec3(0, 0, 555), red));
+            world.Add(new Quad(new Vec3(113, 554, 127), new Vec3(330, 0, 0), new Vec3(0, 0, 305), light));
+            world.Add(new Quad(new Vec3(0, 555, 0), new Vec3(555, 0, 0), new Vec3(0, 0, 555), white));
+            world.Add(new Quad(new Vec3(0, 0, 0), new Vec3(555, 0, 0), new Vec3(0, 0, 555), white));
+            world.Add(new Quad(new Vec3(0, 0, 555), new Vec3(555, 0, 0), new Vec3(0, 555, 0), white));
+
+            Hittable box1 = Quad.Box(new Vec3(0, 0, 0), new Vec3(165, 330, 165), white);
+            box1 = new RotateY(box1, 15);
+            box1 = new Translate(box1, new Vec3(265, 0, 295));
+
+            Hittable box2 = Quad.Box(new Vec3(0, 0, 0), new Vec3(165, 165, 165), white);
+            box2 = new RotateY(box2, -18);
+            box2 = new Translate(box2, new Vec3(130, 0, 65));
+
+            world.Add(new ConstantMedium(box1, 0.01, new Vec3(0, 0, 0)));
+            world.Add(new ConstantMedium(box2, 0.01, new Vec3(1, 1, 1)));
+
+
+            cam = new Camera(
+                aspectRatio: 1.0,
+                imageWidth: 300,
+                samplesPerPixel: 50,
+                maxDepth: 10,
+                background: new Vec3(0, 0, 0),
+                vFov: 40,
+                lookFrom: new Vec3(278, 278, -800),
+                lookAt: new Vec3(278, 278, 0),
+                vUp: new Vec3(0, 1, 0),
+                defocusAngle: 0);
+        }
+
+        static void FinalScene(HittableList world, out Camera cam)
+        {
+            HittableList boxes1 = new HittableList();
+            Material ground = new Lambertian(new Vec3(0.48, 0.83, 0.53));
+
+            Random rand = new Random();
+            int boxesPerSide = 20;
+            for (int i = 0; i < boxesPerSide; i++)
+            {
+                for (int j = 0; j < boxesPerSide; j++)
+                {
+                    double w = 100;
+                    double x0 = -1000 + i * w;
+                    double z0 = -1000 + j * w;
+                    double y0 = 0;
+                    double x1 = x0 + w;
+                    double y1 = rand.NextDouble() * 101 + 1;
+                    double z1 = z0 + w;
+                    boxes1.Add(Quad.Box(new Vec3(x0, y0, z0), new Vec3(x1, y1, z1), ground));
+                }
+            }
+
+            world.Add(new BVHNode(boxes1));
+
+            Material light = new DiffuseLight(new Vec3(7, 7, 7));
+            world.Add(new Quad(new Vec3(123, 554, 147), new Vec3(300, 0, 0), new Vec3(0, 0, 265), light));
+
+            Vec3 center1 = new Vec3(400, 400, 200);
+            Vec3 center2 = center1 + new Vec3(30, 0, 0);
+            Material movingSphereMaterial = new Lambertian(new Vec3(0.7, 0.3, 0.1));
+            world.Add(new Sphere(center1, center2, 50, movingSphereMaterial));
+
+            world.Add(new Sphere(new Vec3(260, 150, 45), 50, new Dielectric(1.5)));
+            world.Add(new Sphere(new Vec3(0, 150, 145), 50, new Metal(new Vec3(0.8, 0.8, 0.9), 1.0)));
+
+            Hittable boundary = new Sphere(new Vec3(360, 150, 145), 70, new Dielectric(1.5));
+            world.Add(boundary);
+            world.Add(new ConstantMedium(boundary, 0.2, new Vec3(0.2, 0.4, 0.9)));
+            boundary = new Sphere(new Vec3(0, 0, 0), 5000, new Dielectric(1.5));
+            world.Add(new ConstantMedium(boundary, 0.0001, new Vec3(1, 1, 1)));
+
+            Material earthMaterial = new Lambertian(new ImageTexture("earthmap.jpg"));
+            world.Add(new Sphere(new Vec3(400, 200, 400), 100, earthMaterial));
+            Material perlinMaterial = new Lambertian(new NoiseTexture(0.2));
+            world.Add(new Sphere(new Vec3(220, 280, 300), 80, perlinMaterial));
+
+            HittableList boxes2 = new HittableList();
+            Material white = new Lambertian(new Vec3(0.73, 0.73, 0.73));
+            int ns = 1000;
+            for (int j = 0; j < ns; j++)
+            {
+                boxes2.Add(new Sphere(Vec3.Random(0, 165), 10, white));
+            }
+
+            world.Add(new Translate(new RotateY(new BVHNode(boxes2), 15), new Vec3(-100, 270, 395)));
+
+            cam = new Camera(
+                aspectRatio: 1.0,
+                imageWidth: 1080,
+                samplesPerPixel: 100,
+                maxDepth: 50,
+                background: new Vec3(0, 0, 0),
+                vFov: 40,
+                lookFrom: new Vec3(478, 278, -600),
+                lookAt: new Vec3(278, 278, 0),
+                vUp: new Vec3(0, 1, 0),
+                defocusAngle: 0);
+        }
+
+        static void EerieScene(HittableList world, out Camera cam)
+        {
+            Random rand = new Random();
+            Material darkStone = new Lambertian(new Vec3(0.15, 0.12, 0.1));
+            Material darkerStone = new Lambertian(new Vec3(0.08, 0.07, 0.06));
+
+            // Ground
+            world.Add(new Sphere(new Vec3(0, -1000, 0), 1000, new Lambertian(new Vec3(0.1, 0.09, 0.08))));
+
+            // Tall background boxes (like ruined buildings/pillars)
+            HittableList boxes = new HittableList();
+            for (int i = -3; i <= 3; i++)
+            {
+                double xPos = i * 120 + rand.NextDouble() * 40 - 20;
+                double height = 300 + rand.NextDouble() * 400;
+                double width = 40 + rand.NextDouble() * 60;
+                double depth = 40 + rand.NextDouble() * 60;
+                double zPos = 400 + rand.NextDouble() * 300;
+                boxes.Add(Quad.Box(
+                    new Vec3(xPos - width / 2, 0, zPos - depth / 2),
+                    new Vec3(xPos + width / 2, height, zPos + depth / 2),
+                    rand.NextDouble() > 0.5 ? darkStone : darkerStone));
+            }
+
+            // Side boxes — left
+            for (int i = 0; i < 3; i++)
+            {
+                double height = 200 + rand.NextDouble() * 300;
+                double zPos = 100 + i * 150 + rand.NextDouble() * 50;
+                boxes.Add(Quad.Box(
+                    new Vec3(-350 + rand.NextDouble() * 30, 0, zPos),
+                    new Vec3(-280 + rand.NextDouble() * 20, height, zPos + 50),
+                    darkStone));
+            }
+
+            // Side boxes — right
+            for (int i = 0; i < 3; i++)
+            {
+                double height = 200 + rand.NextDouble() * 300;
+                double zPos = 100 + i * 150 + rand.NextDouble() * 50;
+                boxes.Add(Quad.Box(
+                    new Vec3(280 + rand.NextDouble() * 20, 0, zPos),
+                    new Vec3(350 + rand.NextDouble() * 30, height, zPos + 50),
+                    darkStone));
+            }
+
+            world.Add(new BVHNode(boxes));
+
+            // Warm light source — like a distant torch or fire, slightly off-center
+            Material warmLight = new DiffuseLight(new Vec3(8, 4, 1));
+            world.Add(new Sphere(new Vec3(60, 80, 350), 18, warmLight));
+
+            // Human figure approximated with spheres and boxes — barely visible in fog
+            Material figureMat = new Lambertian(new Vec3(0.05, 0.04, 0.04));
+            // Head
+            world.Add(new Sphere(new Vec3(0, 165, 300), 12, figureMat));
+            // Torso
+            world.Add(Quad.Box(new Vec3(-10, 90, 295), new Vec3(10, 155, 310), figureMat));
+            // Left arm
+            world.Add(Quad.Box(new Vec3(-22, 95, 296), new Vec3(-10, 145, 308), figureMat));
+            // Right arm
+            world.Add(Quad.Box(new Vec3(10, 95, 296), new Vec3(22, 145, 308), figureMat));
+            // Left leg
+            world.Add(Quad.Box(new Vec3(-10, 20, 295), new Vec3(-2, 90, 308), figureMat));
+            // Right leg
+            world.Add(Quad.Box(new Vec3(2, 20, 295), new Vec3(10, 90, 308), figureMat));
+
+            // Fog — thin global constant medium over a large sphere
+            Hittable fogBoundary = new Sphere(new Vec3(0, 0, 0), 2000, new Dielectric(1.5));
+            world.Add(new ConstantMedium(fogBoundary, 0.003, new Vec3(0.4, 0.3, 0.25))); // warm tinted fog
+
+            cam = new Camera(
+                aspectRatio: 16.0 / 9.0,
+                imageWidth: 800,
+                samplesPerPixel: 200,
+                maxDepth: 50,
+                background: new Vec3(0, 0, 0),
+                vFov: 50,
+                lookFrom: new Vec3(0, 80, -200),
+                lookAt: new Vec3(0, 100, 300),
+                vUp: new Vec3(0, 1, 0),
+                defocusAngle: 0);
+        }
+
         static void Main(string[] args)
         {
             HittableList scene = new HittableList();
 
-            CornellBox(scene, out Camera cam);
+            FinalScene(scene, out Camera cam);
             HittableList world = new HittableList();
             world.Add(new BVHNode(scene));
 

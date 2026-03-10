@@ -131,4 +131,20 @@ namespace Raytracer
             return Texture.Value(u, v, p);
         }
     }
+
+    public class Isotropic : Material
+    {
+        public Texture Texture { get; }
+        public Isotropic(Texture texture)
+        {
+            Texture = texture;
+        }
+        public Isotropic(Vec3 albedo) : this(new SolidColor(albedo)) { }
+        public override bool Scatter(Ray rIn, HitRecord rec, out Vec3 attenuation, out Ray scattered)
+        {
+            scattered = new Ray(rec.Point, Vec3.RandomUnitVector(), rIn.Time);
+            attenuation = Texture.Value(rec.U, rec.V, rec.Point);
+            return true;
+        }
+    }
 }

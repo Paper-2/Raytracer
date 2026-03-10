@@ -56,15 +56,12 @@ namespace Raytracer
             }
         }
 
-        public override bool Hit(Ray r, Interval rayT, out HitRecord rec)
+        public override bool Hit(Ray r, Interval rayT, ref HitRecord rec)
         {
-            rec = null;
             if (!BoundingBox.Hit(r, rayT)) { return false; }
 
-            bool hitLeft = Left.Hit(r, rayT, out rec);
-            bool hitRight = Right.Hit(r, rayT, out HitRecord rightRec);
-
-            if (hitRight) rec = rightRec;
+            bool hitLeft = Left.Hit(r, rayT, ref rec);
+            bool hitRight = Right.Hit(r, new Interval(rayT.Min, hitLeft ? rec.T : rayT.Max), ref rec);
 
             return hitLeft || hitRight;
         }

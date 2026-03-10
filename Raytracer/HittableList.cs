@@ -26,21 +26,20 @@ namespace Raytracer
                 ? obj.BoundingBox
                 : new AABB(BoundingBox, obj.BoundingBox);
         }
-        public void Add(HittableList list)
-        {
-            foreach (var obj in list.Objects)
-                Add(obj);
-        }
+        //public void Add(HittableList list)
+        //{
+        //    foreach (var obj in list.Objects)
+        //        Add(obj);
+        //}
 
-        public override bool Hit(Ray r, Interval rayT, out HitRecord rec)
+        public override bool Hit(Ray r, Interval rayT, ref HitRecord rec)
         {
-            rec = null;
-            HitRecord tempRec = null;
+            HitRecord tempRec = new HitRecord();
             bool hitAnything = false;
             double closestSoFar = rayT.Max;
             foreach (Hittable obj in Objects)
             {
-                if (obj.Hit(r, new Interval(rayT.Min, closestSoFar), out tempRec))
+                if (obj.Hit(r, new Interval(rayT.Min, closestSoFar), ref tempRec))
                 {
                     hitAnything = true;
                     closestSoFar = tempRec.T;

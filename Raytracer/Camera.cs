@@ -86,8 +86,8 @@ namespace Raytracer
         {
             if (depth <= 0) { return new Vec3(0, 0, 0); }
 
-            HitRecord rec = null;
-            if (!world.Hit(ray, new Interval(0.001, double.PositiveInfinity), out rec))
+            HitRecord rec = new HitRecord();
+            if (!world.Hit(ray, new Interval(0.001, double.PositiveInfinity), ref rec))
             {
                 return Background;
             }
