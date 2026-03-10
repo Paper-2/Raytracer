@@ -383,7 +383,7 @@ namespace Raytracer
         {
             HittableList scene = new HittableList();
 
-            FinalScene(scene, out Camera cam);
+            LoadExportedScene(@"c:\Users\holac\source\repos\Raytracer\VulkanRaymarcher\scene_triangles.txt", scene, out Camera cam);
             HittableList world = new HittableList();
             world.Add(new BVHNode(scene));
 

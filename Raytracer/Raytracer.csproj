@@ -85,8 +85,10 @@
     <Compile Include="Quad.cs" />
     <Compile Include="Ray.cs" />
     <Compile Include="RtwImage.cs" />
+    <Compile Include="SceneLoader.cs" />
     <Compile Include="Sphere.cs" />
     <Compile Include="Texture.cs" />
+    <Compile Include="Triangle.cs" />
     <Compile Include="Vec3.cs" />
   </ItemGroup>
   <ItemGroup>
