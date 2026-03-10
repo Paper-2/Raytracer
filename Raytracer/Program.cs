@@ -379,11 +379,30 @@ namespace Raytracer
                 defocusAngle: 0);
         }
 
+        static void LoadExportedScene(string filePath, HittableList world, out Camera cam)
+        {
+            List<Material> materials;
+            SceneLoader.LoadScene(filePath, world, out materials);
+            
+            // Camera matching VulkanRaymarcher's LoadGltfScene
+            cam = new Camera(
+                aspectRatio: 4.0 / 3.0,
+                imageWidth: 800,
+                samplesPerPixel: 10,
+                maxDepth: 50,
+                background: new Vec3(0.02, 0.02, 0.03),
+                vFov: 50,
+                lookFrom: new Vec3(0, 4, -8),
+                lookAt: new Vec3(0, 0, 0),
+                vUp: new Vec3(0, 1, 0),
+                defocusAngle: 0);
+        }
+
         static void Main(string[] args)
         {
             HittableList scene = new HittableList();
 
-            FinalScene(scene, out Camera cam);
+            LoadExportedScene(@"c:\Users\holac\source\repos\Raytracer\VulkanRaymarcher\scene_triangles.txt", scene, out Camera cam);
             HittableList world = new HittableList();
             world.Add(new BVHNode(scene));
 
