@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpNoise.Modules;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -295,88 +296,115 @@ namespace Raytracer
                 defocusAngle: 0);
         }
 
-        static void EerieScene(HittableList world, out Camera cam)
+        static void EerieScene(HittableList world, out Camera cam, out string filename)
         {
-            Random rand = new Random();
-            Material darkStone = new Lambertian(new Vec3(0.15, 0.12, 0.1));
-            Material darkerStone = new Lambertian(new Vec3(0.08, 0.07, 0.06));
-
             // Ground
-            world.Add(new Sphere(new Vec3(0, -1000, 0), 1000, new Lambertian(new Vec3(0.1, 0.09, 0.08))));
+            Material ground = new Lambertian(new Vec3(0.46, 0.36, 0.29));
+            world.Add(new Sphere(new Vec3(0, -1000, 0), 1000, ground));
 
-            // Tall background boxes (like ruined buildings/pillars)
-            HittableList boxes = new HittableList();
-            for (int i = -3; i <= 3; i++)
+            // Towers
+            Random rand = new Random(67);
+            HittableList towers = new HittableList();
+            for (int a = -20; a < 20; a += 2)
             {
-                double xPos = i * 120 + rand.NextDouble() * 40 - 20;
-                double height = 300 + rand.NextDouble() * 400;
-                double width = 40 + rand.NextDouble() * 60;
-                double depth = 40 + rand.NextDouble() * 60;
-                double zPos = 400 + rand.NextDouble() * 300;
-                boxes.Add(Quad.Box(
-                    new Vec3(xPos - width / 2, 0, zPos - depth / 2),
-                    new Vec3(xPos + width / 2, height, zPos + depth / 2),
-                    rand.NextDouble() > 0.5 ? darkStone : darkerStone));
+                for (int b = 2; b < 40; b += 2)
+                {
+                    //if (a >= -2 && a <= 2) continue;
+                    Material metal = new Metal(new Vec3(0.3, 0.3, 0.4), 0.8);
+                    Hittable box = Quad.Box(new Vec3(0, 0, 0), new Vec3(0.3, 10, 0.3), metal);
+                    box = new RotateY(box, rand.NextDouble() * 90);
+                    Vec3 position = new Vec3(a + 0.9 * rand.NextDouble(), -2, b + 0.9 * rand.NextDouble());
+                    box = new Translate(box, position);
+                    towers.Add(box);
+                }
             }
+            world.Add(new BVHNode(towers));
 
-            // Side boxes — left
-            for (int i = 0; i < 3; i++)
-            {
-                double height = 200 + rand.NextDouble() * 300;
-                double zPos = 100 + i * 150 + rand.NextDouble() * 50;
-                boxes.Add(Quad.Box(
-                    new Vec3(-350 + rand.NextDouble() * 30, 0, zPos),
-                    new Vec3(-280 + rand.NextDouble() * 20, height, zPos + 50),
-                    darkStone));
-            }
-
-            // Side boxes — right
-            for (int i = 0; i < 3; i++)
-            {
-                double height = 200 + rand.NextDouble() * 300;
-                double zPos = 100 + i * 150 + rand.NextDouble() * 50;
-                boxes.Add(Quad.Box(
-                    new Vec3(280 + rand.NextDouble() * 20, 0, zPos),
-                    new Vec3(350 + rand.NextDouble() * 30, height, zPos + 50),
-                    darkStone));
-            }
-
-            world.Add(new BVHNode(boxes));
-
-            // Warm light source — like a distant torch or fire, slightly off-center
+            // Warm torch light
             Material warmLight = new DiffuseLight(new Vec3(8, 4, 1));
-            world.Add(new Sphere(new Vec3(60, 80, 350), 18, warmLight));
+            world.Add(new Sphere(new Vec3(-0.2, 0, 3), 0.13, warmLight));
 
-            // Human figure approximated with spheres and boxes — barely visible in fog
-            Material figureMat = new Lambertian(new Vec3(0.05, 0.04, 0.04));
-            // Head
-            world.Add(new Sphere(new Vec3(0, 165, 300), 12, figureMat));
-            // Torso
-            world.Add(Quad.Box(new Vec3(-10, 90, 295), new Vec3(10, 155, 310), figureMat));
-            // Left arm
-            world.Add(Quad.Box(new Vec3(-22, 95, 296), new Vec3(-10, 145, 308), figureMat));
-            // Right arm
-            world.Add(Quad.Box(new Vec3(10, 95, 296), new Vec3(22, 145, 308), figureMat));
-            // Left leg
-            world.Add(Quad.Box(new Vec3(-10, 20, 295), new Vec3(-2, 90, 308), figureMat));
-            // Right leg
-            world.Add(Quad.Box(new Vec3(2, 20, 295), new Vec3(10, 90, 308), figureMat));
+            // Fog
+            Hittable boundary = Quad.Box(new Vec3(-20, -10, 0), new Vec3(20, 10, 40), ground);
+            world.Add(new ConstantMedium(boundary, 0.01, new Vec3(1, 1, 1)));
 
-            // Fog — thin global constant medium over a large sphere
-            Hittable fogBoundary = new Sphere(new Vec3(0, 0, 0), 2000, new Dielectric(1.5));
-            world.Add(new ConstantMedium(fogBoundary, 0.003, new Vec3(0.4, 0.3, 0.25))); // warm tinted fog
+            // Figure
+            HittableList figure = new HittableList();
+            Material figureMat = new Lambertian(new Vec3(1, 1, 1));
+            Vec3 translate = new Vec3(-0.07, 0, 25);
+            //Vec3 translate = new Vec3(-0.07, -0.5, 3);
+
+            Hittable head = new Sphere(new Vec3(0, 0.9, 0), 0.2, figureMat);
+            figure.Add(head);
+            Hittable body = Quad.Box(new Vec3(-0.1, -2, 0), new Vec3(0.15, 1.1, 0.15), figureMat);
+            figure.Add(body);
+
+            //Material eyeMaterial = new DiffuseLight(new Vec3(1, 1, 0));
+            //Hittable leftEye = new Sphere(new Vec3(0.07, 0.95, -0.17), 0.02, eyeMaterial);
+            //figure.Add(leftEye);
+            //Hittable rightEye = new Sphere(new Vec3(-0.07, 0.95, -0.17), 0.02, eyeMaterial);
+            //figure.Add(rightEye);
+
+            world.Add(new Translate(new BVHNode(figure), translate));
 
             cam = new Camera(
                 aspectRatio: 16.0 / 9.0,
-                imageWidth: 800,
-                samplesPerPixel: 200,
+                imageWidth: 1920,
+                samplesPerPixel: 100,
                 maxDepth: 50,
-                background: new Vec3(0, 0, 0),
-                vFov: 50,
-                lookFrom: new Vec3(0, 80, -200),
-                lookAt: new Vec3(0, 100, 300),
+                background: new Vec3(0.01, 0.01, 0.01),
+                vFov: 20,
+                lookFrom: new Vec3(0, 0.5, 0),
+                lookAt: new Vec3(0.1, 0.45, 1),
+                vUp: new Vec3(0, 1, 0),
+                defocusAngle: 0.6,
+                focusDist: 10);
+            filename = "eerie_scene.ppm";
+        }
+
+        static void Face(HittableList world, out Camera cam, out string filename)
+        {
+            Texture faceTexture = new ImageTexture("face.png");
+            Material faceMaterial = new Lambertian(faceTexture);
+
+            double spacing = 5;
+            for (int x = 0; x <= 32; x += 3) 
+            {
+                Hittable sphere = new Sphere(new Vec3(0, 0, 0), x * 0.03 + 1, faceMaterial);
+                for (int y = -8; y <= 8; y++)
+                {
+                    for (int z = -8; z <= 8; z++)
+                    { 
+                        world.Add(new Translate(sphere, new Vec3(-(x * spacing + 10), y * spacing, z * spacing))); 
+                    }
+                }
+            }
+
+            Material glass = new Dielectric(1.5);
+            Random rand = new Random(67);
+
+            for (int i = 0; i < 5; i++)
+            {
+                double gx = -(rand.NextDouble() * 32 * spacing + 10);
+                double gy = (rand.NextDouble() * 16 - 8) * spacing;
+                double gz = (rand.NextDouble() * 16 - 8) * spacing;
+                double gr = 1 + rand.NextDouble() * 2.0;
+                world.Add(new Sphere(new Vec3(gx, gy, gz) * 0.25, gr, glass));
+            }
+
+            cam = new Camera(
+                aspectRatio: 16.0 / 9.0,
+                imageWidth: 1920,
+                samplesPerPixel: 100,
+                maxDepth: 50,
+                background: new Vec3(1, 1, 1),
+                vFov: 20,
+                lookFrom: new Vec3(12, 0, 0),
+                lookAt: new Vec3(0, 0, 0),
                 vUp: new Vec3(0, 1, 0),
                 defocusAngle: 0);
+
+            filename = "face.ppm";
         }
 
         static void LoadExportedScene(string filePath, HittableList world, out Camera cam)
@@ -401,6 +429,7 @@ namespace Raytracer
         static void Main(string[] args)
         {
             HittableList scene = new HittableList();
+            string filename = null;
 
             LoadExportedScene(@"c:\Users\holac\source\repos\Raytracer\VulkanRaymarcher\scene_triangles.txt", scene, out Camera cam);
             HittableList world = new HittableList();
@@ -419,13 +448,15 @@ namespace Raytracer
                 vUp: new Vec3(0, 1, 0),
                 defocusAngle: 0.6, 
                 focusDist: 10);
+            if (filename == null)
+                filename = "output.ppm";
 
             var sw = Stopwatch.StartNew();
             string output = cam.Render(world);
             sw.Stop();
 
             Console.WriteLine($"Render completed in {sw.Elapsed.TotalSeconds:F2} seconds ({sw.Elapsed}).");
-            File.WriteAllText("output.ppm", output);
+            File.WriteAllText(filename, output);
         }
     }
 }
